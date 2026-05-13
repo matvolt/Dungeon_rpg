@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>⚔️ Donjon des Héros</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1a0a2e;
+  --bg2: #2d1654;
+  --card: #231042;
+  --border: rgba(255,255,255,0.08);
+  --gold: #ffd700;
+  --gold2: #ffaa00;
+  --red: #ff4757;
+  --green: #2ed573;
+  --blue: #1e90ff;
+  --purple: #a855f7;
+  --orange: #ff6b35;
+  --teal: #00d2d3;
+  --white: #f0e6ff;
+  --muted: #8b7aa8;
+  --hp-color: #ff4757;
+  --mp-color: #1e90ff;
+  --xp-color: #ffd700;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+html, body { height:100%; overflow:hidden; }
+body {
+  font-family:'Nunito',sans-serif;
+  background:var(--bg);
+  color:var(--white);
+  display:flex; flex-direction:column;
+  max-width:430px; margin:0 auto;
+  position:relative;
+  overflow:hidden;
+}
+
+/* ── STARS BG ── */
+.stars {
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: radial-gradient(ellipse at 20% 20%, rgba(168,85,247,0.15) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 80%, rgba(30,144,255,0.12) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 0%, rgba(255,215,0,0.08) 0%, transparent 40%);
+}
+
+/* ── SCREENS ── */
+.screen { position:absolute; inset:0; display:none; flex-direction:column; z-index:1; overflow:hidden; }
+.screen.active { display:flex; }
+
+/* ══════════════════════════════
+   TITLE SCREEN
+══════════════════════════════ */
+#screen-title {
+  align-items:center; justify-content:center;
+  background: radial-gradient(ellipse at 50% 30%, #3d1a6e 0%, #1a0a2e 70%);
+}
+.title-castle { font-size:90px; margin-bottom:8px; animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-12px);} }
+.title-main {
+  font-family:'Cinzel Decorative',cursive;
+  font-size:26px; color:var(--gold);
+  text-shadow:0 0 30px rgba(255,215,0,0.6), 0 2px 4px rgba(0,0,0,0.8);
+  text-align:center; line-height:1.2; margin-bottom:6px;
+}
+.title-sub { font-size:13px; color:var(--muted); font-weight:700; letter-spacing:3px; text-transform:uppercase; margin-bottom:40px; }
+.class-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; padding:0 20px; width:100%; }
+.class-card {
+  background:rgba(255,255,255,0.05);
+  border:2px solid rgba(255,255,255,0.1);
+  border-radius:18px; padding:14px 10px;
+  text-align:center; cursor:pointer;
+  transition:all 0.2s;
+}
+.class-card:active { transform:scale(0.94); }
+.class-card.selected { border-color:var(--gold); background:rgba(255,215,0,0.1); box-shadow:0 0 20px rgba(255,215,0,0.2); }
+.class-icon { font-size:36px; margin-bottom:6px; }
+.class-name { font-family:'Cinzel Decorative',cursive; font-size:11px; color:var(--gold); margin-bottom:4px; }
+.class-stats { font-size:10px; color:var(--muted); line-height:1.6; font-weight:700; }
+.btn-start {
+  margin-top:28px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#1a0a2e; font-family:'Cinzel Decorative',cursive;
+  font-size:16px; font-weight:900;
+  padding:14px 40px; border-radius:999px; border:none;
+  cursor:pointer; transition:all 0.2s;
+  box-shadow:0 6px 24px rgba(255,215,0,0.4);
+}
+.btn-start:active { transform:scale(0.96); }
+
+/* ══════════════════════════════
+   GAME SCREEN
+══════════════════════════════ */
+#screen-game { flex-direction:column; }
+
+/* Top HUD */
+.hud {
+  padding:12px 16px 10px;
+  background:rgba(0,0,0,0.4);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0; z-index:10;
+}
+.hud-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.hud-name { font-family:'Cinzel Decorative',cursive; font-size:13px; color:var(--gold); }
+.hud-floor { font-size:12px; color:var(--muted); font-weight:700; }
+.hud-gold { font-size:13px; font-weight:800; color:var(--gold); }
+.bars { display:flex; flex-direction:column; gap:5px; }
+.bar-row { display:flex; align-items:center; gap:8px; }
+.bar-icon { font-size:13px; width:16px; text-align:center; }
+.bar-track { flex:1; height:10px; background:rgba(255,255,255,0.1); border-radius:999px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:999px; transition:width 0.4s; }
+.bar-hp { background:linear-gradient(90deg,#ff4757,#ff6b81); }
+.bar-mp { background:linear-gradient(90deg,#1e90ff,#74b9ff); }
+.bar-xp { background:linear-gradient(90deg,#ffd700,#ffaa00); }
+.bar-val { font-size:11px; font-weight:800; color:var(--white); min-width:48px; text-align:right; }
+
+/* Room area */
+.room-area {
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:16px; overflow:hidden; position:relative;
+}
+.room-title {
+  font-family:'Cinzel Decorative',cursive;
+  font-size:14px; color:var(--gold);
+  margin-bottom:12px; text-align:center;
+  text-shadow:0 0 20px rgba(255,215,0,0.4);
+}
+
+/* Room visual */
+.room-visual {
+  width:100%; max-width:340px;
+  background:rgba(0,0,0,0.3);
+  border:2px solid rgba(255,255,255,0.08);
+  border-radius:24px; padding:20px;
+  position:relative; overflow:hidden;
+  margin-bottom:14px;
+}
+.room-visual::before {
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(168,85,247,0.1),transparent 60%);
+}
+.room-scene { display:flex; align-items:flex-end; justify-content:center; gap:20px; min-height:120px; position:relative; z-index:1; }
+.hero-sprite { font-size:58px; position:relative; animation:heroIdle 2s ease-in-out infinite; }
+@keyframes heroIdle { 0%,100%{transform:translateY(0) scaleX(1);} 50%{transform:translateY(-5px) scaleX(1);} }
+.hero-sprite.attack { animation:heroAttack 0.4s ease-out; }
+@keyframes heroAttack { 0%{transform:translateX(0);} 40%{transform:translateX(40px) scaleX(1.1);} 100%{transform:translateX(0);} }
+.hero-sprite.hurt { animation:heroHurt 0.35s ease-out; }
+@keyframes heroHurt { 0%,100%{transform:translateX(0);filter:none;} 50%{transform:translateX(-10px);filter:brightness(0.5) sepia(1) hue-rotate(-30deg);} }
+
+.enemy-sprite { font-size:62px; position:relative; animation:enemyIdle 1.8s ease-in-out infinite; cursor:pointer; }
+@keyframes enemyIdle { 0%,100%{transform:scaleY(1);} 50%{transform:scaleY(1.06);} }
+.enemy-sprite.hurt { animation:enemyHurt 0.35s ease-out; }
+@keyframes enemyHurt { 0%,100%{filter:none;transform:translateX(0);} 50%{filter:brightness(2) saturate(0);transform:translateX(8px);} }
+.enemy-sprite.dead { animation:enemyDie 0.5s ease-out forwards; }
+@keyframes enemyDie { 0%{transform:scale(1) rotate(0);opacity:1;} 100%{transform:scale(0.3) rotate(180deg);opacity:0;} }
+
+.enemy-hpbar {
+  position:absolute; bottom:-8px; left:50%; transform:translateX(-50%);
+  width:70px; height:6px; background:rgba(255,255,255,0.15); border-radius:999px; overflow:hidden;
+}
+.enemy-hpfill { height:100%; background:linear-gradient(90deg,#ff4757,#ff6b81); border-radius:999px; transition:width 0.3s; }
+
+.room-desc {
+  font-size:13px; color:var(--muted); font-weight:700;
+  text-align:center; line-height:1.5; position:relative; z-index:1;
+  margin-top:12px;
+}
+
+/* Damage numbers */
+.dmg-float {
+  position:absolute; font-family:'Cinzel Decorative',cursive;
+  font-size:22px; font-weight:900; pointer-events:none; z-index:50;
+  animation:dmgFloat 0.9s ease-out forwards;
+}
+@keyframes dmgFloat { 0%{transform:translateY(0) scale(1);opacity:1;} 100%{transform:translateY(-70px) scale(1.4);opacity:0;} }
+
+/* Action buttons */
+.actions { padding:0 14px 10px; flex-shrink:0; }
+.actions-grid { display:grid; gap:8px; }
+.actions-grid.combat { grid-template-columns:1fr 1fr; }
+.actions-grid.explore { grid-template-columns:1fr 1fr 1fr; }
+.actions-grid.merchant { grid-template-columns:1fr 1fr; }
+.action-btn {
+  padding:12px 8px;
+  border-radius:16px; border:none;
+  font-family:'Nunito',sans-serif; font-size:13px; font-weight:800;
+  cursor:pointer; transition:all 0.15s;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  position:relative; overflow:hidden;
+}
+.action-btn:active { transform:scale(0.94); }
+.action-btn .btn-icon { font-size:22px; }
+.action-btn .btn-label { font-size:11px; }
+.action-btn .btn-cost { font-size:10px; color:rgba(255,255,255,0.6); }
+
+.btn-attack { background:linear-gradient(135deg,#ff4757,#c0392b); color:white; box-shadow:0 4px 16px rgba(255,71,87,0.4); }
+.btn-magic  { background:linear-gradient(135deg,#a855f7,#7c3aed); color:white; box-shadow:0 4px 16px rgba(168,85,247,0.4); }
+.btn-defend { background:linear-gradient(135deg,#1e90ff,#0066cc); color:white; box-shadow:0 4px 16px rgba(30,144,255,0.3); }
+.btn-item   { background:linear-gradient(135deg,#ff6b35,#e55a2b); color:white; box-shadow:0 4px 16px rgba(255,107,53,0.3); }
+.btn-flee   { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:var(--muted); }
+.btn-explore { background:linear-gradient(135deg,#2ed573,#1abc9c); color:#1a0a2e; box-shadow:0 4px 16px rgba(46,213,115,0.3); }
+.btn-map    { background:linear-gradient(135deg,#ffd700,#ffaa00); color:#1a0a2e; box-shadow:0 4px 16px rgba(255,215,0,0.3); }
+.btn-rest   { background:linear-gradient(135deg,#00d2d3,#0097a7); color:white; box-shadow:0 4px 16px rgba(0,210,211,0.3); }
+.btn-buy    { background:linear-gradient(135deg,#ffd700,#ffaa00); color:#1a0a2e; box-shadow:0 4px 16px rgba(255,215,0,0.3); font-size:12px; }
+.btn-leave  { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:var(--muted); }
+.btn-disabled { opacity:0.4; cursor:not-allowed; }
+
+/* Combat log */
+.log-area {
+  padding:0 14px 6px; flex-shrink:0;
+  max-height:64px; overflow:hidden;
+}
+.log-entry {
+  font-size:12px; font-weight:700; color:var(--muted);
+  line-height:1.6; text-align:center;
+  animation:logFade 0.3s ease-out;
+}
+@keyframes logFade { from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
+.log-entry.good { color:var(--green); }
+.log-entry.bad  { color:var(--red); }
+.log-entry.info { color:var(--gold); }
+.log-entry.magic { color:var(--purple); }
+
+/* ── INVENTORY PANEL ── */
+.panel {
+  position:fixed; inset:0; z-index:100;
+  display:none; flex-direction:column;
+  background:rgba(0,0,0,0.85); backdrop-filter:blur(8px);
+  max-width:430px; margin:0 auto;
+}
+.panel.open { display:flex; }
+.panel-header {
+  padding:18px 20px 14px;
+  display:flex; align-items:center; justify-content:space-between;
+  border-bottom:1px solid var(--border);
+}
+.panel-title { font-family:'Cinzel Decorative',cursive; font-size:16px; color:var(--gold); }
+.panel-close {
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,0.1); border:none;
+  font-size:18px; cursor:pointer; color:var(--white);
+}
+.panel-body { flex:1; overflow-y:auto; padding:16px; }
+.inv-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.inv-slot {
+  aspect-ratio:1; background:rgba(255,255,255,0.05);
+  border:2px solid rgba(255,255,255,0.08);
+  border-radius:14px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:3px;
+  cursor:pointer; transition:all 0.15s; font-size:28px;
+  position:relative;
+}
+.inv-slot:active { transform:scale(0.92); }
+.inv-slot.equipped { border-color:var(--gold); background:rgba(255,215,0,0.1); }
+.inv-slot.empty { opacity:0.3; cursor:default; }
+.inv-slot-qty {
+  position:absolute; bottom:4px; right:6px;
+  font-size:10px; font-weight:900; color:var(--gold);
+}
+.inv-slot-name { font-size:9px; font-weight:800; color:var(--muted); }
+
+.equip-section { margin-top:20px; }
+.equip-title { font-family:'Cinzel Decorative',cursive; font-size:13px; color:var(--gold); margin-bottom:10px; }
+.equip-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.equip-slot {
+  background:rgba(255,255,255,0.05); border:2px dashed rgba(255,255,255,0.15);
+  border-radius:14px; padding:10px; text-align:center;
+}
+.equip-slot.has-item { border-style:solid; border-color:rgba(255,215,0,0.3); }
+.equip-slot-label { font-size:10px; color:var(--muted); font-weight:700; margin-bottom:4px; }
+.equip-slot-item { font-size:26px; }
+.equip-slot-name { font-size:9px; color:var(--white); font-weight:800; margin-top:3px; }
+
+.stats-section { margin-top:20px; }
+.stat-row2 { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; font-weight:700; }
+.stat-row2 .slabel { color:var(--muted); }
+.stat-row2 .sval { color:var(--white); }
+
+/* ── MAP PANEL ── */
+.map-grid { display:grid; gap:6px; justify-content:center; margin-top:10px; }
+.map-cell {
+  width:44px; height:44px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; font-weight:800; border:2px solid transparent;
+  transition:all 0.2s;
+}
+.map-cell.current { border-color:var(--gold); box-shadow:0 0 16px rgba(255,215,0,0.4); animation:mapPulse 1.5s infinite; }
+@keyframes mapPulse { 0%,100%{box-shadow:0 0 16px rgba(255,215,0,0.4);} 50%{box-shadow:0 0 28px rgba(255,215,0,0.7);} }
+.map-cell.visited { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.15); }
+.map-cell.unknown { background:rgba(0,0,0,0.4); border-color:rgba(255,255,255,0.05); font-size:14px; color:var(--muted); }
+.map-legend { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+.map-legend-item { font-size:12px; font-weight:700; color:var(--muted); display:flex; align-items:center; gap:5px; }
+
+/* ── GAME OVER / VICTORY ── */
+#screen-gameover, #screen-victory {
+  align-items:center; justify-content:center;
+  background:radial-gradient(ellipse at 50% 40%, rgba(255,71,87,0.2), transparent 60%), var(--bg);
+}
+#screen-victory { background:radial-gradient(ellipse at 50% 40%, rgba(255,215,0,0.2), transparent 60%), var(--bg); }
+.end-icon { font-size:90px; animation:float 3s infinite; margin-bottom:16px; }
+.end-title { font-family:'Cinzel Decorative',cursive; font-size:28px; color:var(--red); margin-bottom:8px; text-align:center; }
+#screen-victory .end-title { color:var(--gold); }
+.end-sub { font-size:14px; color:var(--muted); font-weight:700; text-align:center; margin-bottom:30px; line-height:1.6; }
+.btn-restart {
+  background:linear-gradient(135deg,var(--red),#c0392b);
+  color:white; font-family:'Cinzel Decorative',cursive;
+  font-size:15px; padding:14px 36px; border-radius:999px; border:none; cursor:pointer;
+  box-shadow:0 6px 24px rgba(255,71,87,0.4);
+}
+#screen-victory .btn-restart { background:linear-gradient(135deg,var(--gold),var(--gold2)); color:#1a0a2e; box-shadow:0 6px 24px rgba(255,215,0,0.4); }
+
+/* ── NAV ── */
+.nav-bar {
+  display:flex; background:rgba(0,0,0,0.5);
+  border-top:1px solid var(--border); flex-shrink:0; z-index:10;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.nav-btn {
+  flex:1; padding:10px 4px 8px;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  background:none; border:none; color:var(--muted);
+  font-family:'Nunito',sans-serif; font-size:10px; font-weight:800;
+  cursor:pointer; transition:color 0.2s;
+}
+.nav-btn .ni { font-size:22px; }
+.nav-btn.active { color:var(--gold); }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; top:80px; left:50%; transform:translateX(-50%) translateY(-20px);
+  background:#231042; border:1px solid var(--gold);
+  color:var(--gold); font-size:13px; font-weight:800;
+  padding:10px 20px; border-radius:999px; z-index:200;
+  opacity:0; transition:all 0.3s; white-space:nowrap;
+  box-shadow:0 4px 20px rgba(255,215,0,0.2);
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── LEVEL UP ── */
+.levelup-flash {
+  position:fixed; inset:0; z-index:150; pointer-events:none;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; transition:opacity 0.3s;
+}
+.levelup-flash.show { opacity:1; }
+.levelup-text {
+  font-family:'Cinzel Decorative',cursive;
+  font-size:32px; color:var(--gold);
+  text-shadow:0 0 40px rgba(255,215,0,0.8);
+  animation:lvlPop 1.5s ease-out forwards;
+}
+@keyframes lvlPop { 0%{transform:scale(0.5);opacity:0;} 30%{transform:scale(1.2);opacity:1;} 70%{transform:scale(1);opacity:1;} 100%{transform:scale(1.5);opacity:0;} }
+
+/* Defend shield */
+.shield-overlay {
+  position:absolute; top:50%; left:10%; transform:translateY(-50%);
+  font-size:36px; opacity:0; pointer-events:none;
+  animation:none;
+}
+.shield-overlay.active { animation:shieldPop 0.6s ease-out forwards; }
+@keyframes shieldPop { 0%{opacity:0;transform:translateY(-50%) scale(0.5);} 50%{opacity:1;transform:translateY(-50%) scale(1.3);} 100%{opacity:0;transform:translateY(-50%) scale(1);} }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<!-- ══ TITLE SCREEN ══ -->
+<div class="screen active" id="screen-title">
+  <div style="text-align:center;padding:40px 20px 20px;">
+    <div class="title-castle">🏰</div>
+    <div class="title-main">Donjon<br>des Héros</div>
+    <div class="title-sub">Choisis ta classe</div>
+  </div>
+  <div class="class-grid">
+    <div class="class-card selected" data-class="warrior" onclick="selectClass(this,'warrior')">
+      <div class="class-icon">⚔️</div>
+      <div class="class-name">Guerrier</div>
+      <div class="class-stats">❤️ 120 HP<br>⚔️ 18 ATK<br>🛡️ 8 DEF</div>
+    </div>
+    <div class="class-card" data-class="mage" onclick="selectClass(this,'mage')">
+      <div class="class-icon">🧙</div>
+      <div class="class-name">Mage</div>
+      <div class="class-stats">❤️ 80 HP<br>💥 28 MAG<br>💧 60 MP</div>
+    </div>
+    <div class="class-card" data-class="rogue" onclick="selectClass(this,'rogue')">
+      <div class="class-icon">🗡️</div>
+      <div class="class-name">Voleur</div>
+      <div class="class-stats">❤️ 95 HP<br>⚡ 22 ATK<br>🎲 Critique</div>
+    </div>
+  </div>
+  <button class="btn-start" onclick="startGame()">Entrer dans le Donjon ⚔️</button>
+</div>
+
+<!-- ══ GAME SCREEN ══ -->
+<div class="screen" id="screen-game">
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-top">
+      <div class="hud-name" id="hud-name">Héros</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div style="font-size:12px;color:var(--muted);font-weight:700;" id="hud-level">Niv.1</div>
+        <div class="hud-floor" id="hud-floor">Étage 1 · Salle 1</div>
+      </div>
+      <div class="hud-gold">💰 <span id="hud-gold">0</span></div>
+    </div>
+    <div class="bars">
+      <div class="bar-row">
+        <div class="bar-icon">❤️</div>
+        <div class="bar-track"><div class="bar-fill bar-hp" id="bar-hp" style="width:100%"></div></div>
+        <div class="bar-val" id="val-hp">100/100</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-icon">💧</div>
+        <div class="bar-track"><div class="bar-fill bar-mp" id="bar-mp" style="width:100%"></div></div>
+        <div class="bar-val" id="val-mp">40/40</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-icon">✨</div>
+        <div class="bar-track"><div class="bar-fill bar-xp" id="bar-xp" style="width:0%"></div></div>
+        <div class="bar-val" id="val-xp">0/100</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Room -->
+  <div class="room-area">
+    <div class="room-title" id="room-title">Couloir sombre</div>
+    <div class="room-visual" id="room-visual">
+      <div class="room-scene" id="room-scene">
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+          <div class="hero-sprite" id="hero-sprite">⚔️</div>
+        </div>
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;" id="enemy-wrap">
+          <div class="enemy-sprite" id="enemy-sprite"></div>
+          <div class="enemy-hpbar" id="enemy-hpbar" style="display:none">
+            <div class="enemy-hpfill" id="enemy-hpfill"></div>
+          </div>
+        </div>
+      </div>
+      <div class="room-desc" id="room-desc">Tu avances dans le couloir...</div>
+      <div class="shield-overlay" id="shield-overlay">🛡️</div>
+    </div>
+
+    <!-- Log -->
+    <div class="log-area">
+      <div class="log-entry info" id="log-entry">Bienvenue dans le donjon !</div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions" id="actions-area">
+    <div class="actions-grid explore" id="actions-grid">
+      <button class="action-btn btn-explore" onclick="doAction('explore')"><span class="btn-icon">🚪</span><span class="btn-label">Explorer</span></button>
+      <button class="action-btn btn-map" onclick="openPanel('map')"><span class="btn-icon">🗺️</span><span class="btn-label">Carte</span></button>
+      <button class="action-btn btn-rest" onclick="doAction('rest')"><span class="btn-icon">🍖</span><span class="btn-label">Se reposer</span></button>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="nav-bar">
+    <button class="nav-btn active" id="nav-explore" onclick="navTo('explore',this)"><div class="ni">🗡️</div>Aventure</button>
+    <button class="nav-btn" id="nav-inv" onclick="openPanel('inv')"><div class="ni">🎒</div>Inventaire</button>
+    <button class="nav-btn" id="nav-map" onclick="openPanel('map')"><div class="ni">🗺️</div>Carte</button>
+  </div>
+</div>
+
+<!-- ══ GAME OVER ══ -->
+<div class="screen" id="screen-gameover">
+  <div class="end-icon">💀</div>
+  <div class="end-title">Tu es mort...</div>
+  <div class="end-sub" id="go-sub">Tu as été vaincu dans le donjon.</div>
+  <button class="btn-restart" onclick="restartGame()">Recommencer ⚔️</button>
+</div>
+
+<!-- ══ VICTORY ══ -->
+<div class="screen" id="screen-victory">
+  <div class="end-icon">👑</div>
+  <div class="end-title">Victoire !</div>
+  <div class="end-sub" id="vic-sub">Tu as conquis le donjon !</div>
+  <button class="btn-restart" onclick="restartGame()">Rejouer 🏆</button>
+</div>
+
+<!-- ══ INVENTORY PANEL ══ -->
+<div class="panel" id="panel-inv">
+  <div class="panel-header">
+    <div class="panel-title">🎒 Inventaire</div>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="panel-body">
+    <div class="inv-grid" id="inv-grid"></div>
+    <div class="equip-section">
+      <div class="equip-title">⚔️ Équipement</div>
+      <div class="equip-grid" id="equip-grid"></div>
+    </div>
+    <div class="stats-section">
+      <div class="equip-title">📊 Statistiques</div>
+      <div id="stats-panel"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAP PANEL ══ -->
+<div class="panel" id="panel-map">
+  <div class="panel-header">
+    <div class="panel-title">🗺️ Carte du Donjon</div>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="panel-body">
+    <div style="text-align:center;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px;" id="map-floor-title"></div>
+    <div class="map-grid" id="map-grid"></div>
+    <div class="map-legend">
+      <div class="map-legend-item">🟡 Position actuelle</div>
+      <div class="map-legend-item">⚔️ Ennemi</div>
+      <div class="map-legend-item">🧙 Marchand</div>
+      <div class="map-legend-item">🍖 Repos</div>
+      <div class="map-legend-item">👑 Boss</div>
+      <div class="map-legend-item">🚪 Sortie</div>
+    </div>
+  </div>
+</div>
+
+<!-- Level up flash -->
+<div class="levelup-flash" id="levelup-flash">
+  <div class="levelup-text">NIVEAU SUPÉRIEUR ! ⬆️</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+//  GAME DATA
+// ════════════════════════════════════════
+
+const CLASSES = {
+  warrior: { name:'Guerrier', icon:'⚔️', hp:120, mp:20, atk:18, def:8,  mag:5,  xpNext:100 },
+  mage:    { name:'Mage',     icon:'🧙', hp:80,  mp:60, atk:8,  def:3,  mag:28, xpNext:100 },
+  rogue:   { name:'Voleur',   icon:'🗡️', hp:95,  mp:30, atk:22, def:5,  mag:8,  xpNext:100 },
+};
+
+const ENEMIES = [
+  { name:'Rat Géant',     icon:'🐀', hp:18, atk:5,  def:1, xp:12,  gold:[2,5],  floor:1 },
+  { name:'Squelette',     icon:'💀', hp:25, atk:8,  def:2, xp:18,  gold:[3,8],  floor:1 },
+  { name:'Gobelin',       icon:'👺', hp:30, atk:10, def:3, xp:22,  gold:[5,12], floor:1 },
+  { name:'Araignée',      icon:'🕷️', hp:22, atk:12, def:2, xp:20,  gold:[4,10], floor:2 },
+  { name:'Fantôme',       icon:'👻', hp:35, atk:14, def:4, xp:28,  gold:[6,14], floor:2 },
+  { name:'Troll',         icon:'👹', hp:55, atk:16, def:6, xp:40,  gold:[8,18], floor:2 },
+  { name:'Démon',         icon:'😈', hp:70, atk:20, def:8, xp:55,  gold:[12,25],floor:3 },
+  { name:'Vampire',       icon:'🧛', hp:65, atk:22, def:7, xp:60,  gold:[15,28],floor:3 },
+  { name:'Chevalier Noir',icon:'🤺', hp:90, atk:25, def:12,xp:80,  gold:[18,35],floor:3 },
+];
+
+const BOSSES = [
+  { name:'Roi Squelette',  icon:'💀👑', hp:120, atk:20, def:8,  xp:150, gold:[30,50], floor:1 },
+  { name:'Dragon Rouge',   icon:'🐉',  hp:200, atk:30, def:14, xp:250, gold:[60,90], floor:2 },
+  { name:'Liche Ancienne', icon:'🧟',  hp:300, atk:40, def:18, xp:400, gold:[100,150],floor:3 },
+];
+
+const ITEMS = [
+  { id:'hp_potion',  name:'Potion HP',   icon:'🧪', type:'consumable', effect:'hp',  val:30, cost:15,  desc:'+30 HP' },
+  { id:'mp_potion',  name:'Potion MP',   icon:'💧', type:'consumable', effect:'mp',  val:20, cost:12,  desc:'+20 MP' },
+  { id:'big_hp',     name:'Élixir',      icon:'🍷', type:'consumable', effect:'hp',  val:70, cost:35,  desc:'+70 HP' },
+  { id:'sword1',     name:'Épée Rouillée',icon:'🗡️',type:'weapon',     effect:'atk', val:5,  cost:25,  desc:'+5 ATK' },
+  { id:'sword2',     name:'Épée de Feu',  icon:'⚔️',type:'weapon',     effect:'atk', val:12, cost:60,  desc:'+12 ATK' },
+  { id:'staff1',     name:'Bâton Magique',icon:'🪄',type:'weapon',     effect:'mag', val:10, cost:40,  desc:'+10 MAG' },
+  { id:'armor1',     name:'Armure Légère',icon:'🛡️',type:'armor',      effect:'def', val:5,  cost:30,  desc:'+5 DEF' },
+  { id:'armor2',     name:'Armure Lourde',icon:'⚙️',type:'armor',      effect:'def', val:12, cost:70,  desc:'+12 DEF' },
+  { id:'ring1',      name:'Anneau Rubis', icon:'💍', type:'accessory',  effect:'atk', val:4,  cost:45,  desc:'+4 ATK' },
+  { id:'boots1',     name:'Bottes Agiles',icon:'👢', type:'accessory',  effect:'def', val:3,  cost:35,  desc:'+3 DEF' },
+];
+
+const ROOM_TYPES = ['enemy','enemy','enemy','enemy','enemy','merchant','rest','chest'];
+
+// ════════════════════════════════════════
+//  GAME STATE
+// ════════════════════════════════════════
+let G = {};
+let selectedClass = 'warrior';
+
+function initState(cls) {
+  const c = CLASSES[cls];
+  G = {
+    class: cls, name: c.name, icon: c.icon,
+    hp: c.hp, maxHp: c.hp,
+    mp: c.mp, maxMp: c.mp,
+    atk: c.atk, def: c.def, mag: c.mag,
+    level: 1, xp: 0, xpNext: c.xpNext,
+    gold: 0,
+    floor: 1, room: 0,
+    inventory: [
+      { ...ITEMS[0], qty:2 },
+      { ...ITEMS[1], qty:1 },
+    ],
+    equipped: { weapon: null, armor: null, accessory: null },
+    bonusAtk: 0, bonusDef: 0, bonusMag: 0,
+    defending: false,
+    map: generateMap(1),
+    currentEnemy: null,
+    currentEnemyHp: 0,
+    phase: 'explore', // explore | combat | merchant | chest
+    kills: 0,
+    roomsVisited: 1,
+    merchantItems: [],
+  };
+}
+
+function generateMap(floor) {
+  const rooms = [];
+  const len = 6 + floor * 2;
+  for (let i = 0; i < len; i++) {
+    if (i === 0) { rooms.push({ type:'start', visited:true, icon:'🏠' }); continue; }
+    if (i === len - 1) { rooms.push({ type:'boss', visited:false, icon:'👑' }); continue; }
+    if (i === len - 2) { rooms.push({ type:'exit', visited:false, icon:'🚪' }); continue; }
+    const t = ROOM_TYPES[Math.floor(Math.random() * ROOM_TYPES.length)];
+    const icons = { enemy:'⚔️', merchant:'🧙', rest:'🍖', chest:'📦' };
+    rooms.push({ type:t, visited:false, icon:icons[t] });
+  }
+  return rooms;
+}
+
+// ════════════════════════════════════════
+//  TITLE
+// ════════════════════════════════════════
+function selectClass(el, cls) {
+  document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedClass = cls;
+}
+
+function startGame() {
+  initState(selectedClass);
+  showScreen('game');
+  updateHUD();
+  loadRoom();
+}
+
+function restartGame() {
+  showScreen('title');
+}
+
+// ════════════════════════════════════════
+//  SCREEN
+// ════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+// ════════════════════════════════════════
+//  HUD
+// ════════════════════════════════════════
+function updateHUD() {
+  document.getElementById('hud-name').textContent = G.icon + ' ' + G.name;
+  document.getElementById('hud-level').textContent = 'Niv.' + G.level;
+  document.getElementById('hud-floor').textContent = `Étage ${G.floor} · Salle ${G.room + 1}`;
+  document.getElementById('hud-gold').textContent = G.gold;
+
+  const hpPct = Math.max(0, (G.hp / G.maxHp) * 100);
+  const mpPct = Math.max(0, (G.mp / G.maxMp) * 100);
+  const xpPct = Math.max(0, (G.xp / G.xpNext) * 100);
+
+  document.getElementById('bar-hp').style.width = hpPct + '%';
+  document.getElementById('bar-mp').style.width = mpPct + '%';
+  document.getElementById('bar-xp').style.width = xpPct + '%';
+
+  document.getElementById('val-hp').textContent = `${G.hp}/${G.maxHp}`;
+  document.getElementById('val-mp').textContent = `${G.mp}/${G.maxMp}`;
+  document.getElementById('val-xp').textContent = `${G.xp}/${G.xpNext}`;
+}
+
+// ════════════════════════════════════════
+//  ROOM LOADING
+// ════════════════════════════════════════
+function loadRoom() {
+  const room = G.map[G.room];
+  room.visited = true;
+
+  document.getElementById('enemy-sprite').textContent = '';
+  document.getElementById('enemy-hpbar').style.display = 'none';
+  document.getElementById('hero-sprite').textContent = G.icon;
+  document.getElementById('hero-sprite').className = 'hero-sprite';
+
+  if (room.type === 'enemy') enterEnemy(false);
+  else if (room.type === 'boss') enterEnemy(true);
+  else if (room.type === 'merchant') enterMerchant();
+  else if (room.type === 'rest') enterRest();
+  else if (room.type === 'chest') enterChest();
+  else if (room.type === 'exit') enterExit();
+  else enterExplore();
+}
+
+function enterEnemy(isBoss) {
+  G.phase = 'combat';
+  G.defending = false;
+
+  let pool;
+  if (isBoss) {
+    const bossBase = BOSSES[Math.min((G.floor - 1) % BOSSES.length, BOSSES.length - 1)];
+    const scale = 1 + (G.floor - 1) * 0.35;
+    pool = [{ ...bossBase,
+      name: G.floor > BOSSES.length ? `${bossBase.name} Ω${Math.floor((G.floor-1)/BOSSES.length)+1}` : bossBase.name,
+      hp:   Math.floor(bossBase.hp   * scale),
+      atk:  Math.floor(bossBase.atk  * scale),
+      def:  Math.floor(bossBase.def  * scale),
+      xp:   Math.floor(bossBase.xp   * scale),
+      gold: [Math.floor(bossBase.gold[0]*scale), Math.floor(bossBase.gold[1]*scale)],
+    }];
+  } else {
+    const scale = 1 + (G.floor - 1) * 0.2;
+    pool = ENEMIES.map(e => ({ ...e,
+      hp:  Math.floor(e.hp  * scale),
+      atk: Math.floor(e.atk * scale),
+      def: Math.floor(e.def * scale),
+      xp:  Math.floor(e.xp  * scale),
+      gold:[Math.floor(e.gold[0]*scale), Math.floor(e.gold[1]*scale)],
+    }));
+  }
+  const e = pool[Math.floor(Math.random() * pool.length)];
+  G.currentEnemy = { ...e, maxHp: e.hp };
+  G.currentEnemyHp = e.hp;
+
+  document.getElementById('room-title').textContent = isBoss ? `⚠️ BOSS: ${e.name}` : `⚔️ ${e.name} apparaît !`;
+  document.getElementById('enemy-sprite').textContent = e.icon;
+  document.getElementById('enemy-sprite').className = 'enemy-sprite';
+  document.getElementById('enemy-hpbar').style.display = 'block';
+  document.getElementById('enemy-hpfill').style.width = '100%';
+  document.getElementById('room-desc').textContent = isBoss ? `Le boss ${e.name} te défie !` : `Un ${e.name} t'attaque !`;
+
+  setLog(`⚔️ Combat contre ${e.name} (${e.hp} HP) !`, 'bad');
+  showCombatActions();
+}
+
+function enterMerchant() {
+  G.phase = 'merchant';
+  // pick 3 random items
+  const shuffled = [...ITEMS].sort(() => Math.random() - 0.5).slice(0, 3);
+  G.merchantItems = shuffled;
+
+  document.getElementById('room-title').textContent = '🧙 Marchand Mystérieux';
+  document.getElementById('enemy-sprite').textContent = '🧙';
+  document.getElementById('enemy-hpbar').style.display = 'none';
+  document.getElementById('room-desc').textContent = 'Le marchand te propose ses meilleurs articles !';
+  setLog('💰 Tu arrives chez un marchand !', 'info');
+
+  const grid = document.getElementById('actions-grid');
+  grid.className = 'actions-grid merchant';
+  grid.innerHTML = '';
+  shuffled.forEach((item, i) => {
+    const canAfford = G.gold >= item.cost;
+    const btn = document.createElement('button');
+    btn.className = `action-btn btn-buy ${canAfford ? '' : 'btn-disabled'}`;
+    btn.innerHTML = `<span class="btn-icon">${item.icon}</span><span class="btn-label">${item.name}</span><span class="btn-cost">${item.desc}</span><span class="btn-cost">💰 ${item.cost}</span>`;
+    if (canAfford) btn.onclick = () => buyItem(item);
+    grid.appendChild(btn);
+  });
+  const leave = document.createElement('button');
+  leave.className = 'action-btn btn-leave';
+  leave.innerHTML = `<span class="btn-icon">🚶</span><span class="btn-label">Partir</span>`;
+  leave.onclick = () => doAction('next');
+  grid.appendChild(leave);
+}
+
+function enterRest() {
+  G.phase = 'rest';
+  document.getElementById('room-title').textContent = '🍖 Salle de Repos';
+  document.getElementById('enemy-sprite').textContent = '🔥';
+  document.getElementById('room-desc').textContent = 'Un feu de camp te permet de récupérer tes forces.';
+  setLog('🍖 Salle de repos ! Tu te reposers.', 'good');
+
+  const heal = Math.floor(G.maxHp * 0.4);
+  const mpHeal = Math.floor(G.maxMp * 0.5);
+  G.hp = Math.min(G.maxHp, G.hp + heal);
+  G.mp = Math.min(G.maxMp, G.mp + mpHeal);
+  updateHUD();
+  setLog(`❤️ +${heal} HP, 💧 +${mpHeal} MP récupérés !`, 'good');
+
+  const grid = document.getElementById('actions-grid');
+  grid.className = 'actions-grid explore';
+  grid.innerHTML = `
+    <button class="action-btn btn-explore" onclick="doAction('next')"><span class="btn-icon">▶️</span><span class="btn-label">Continuer</span></button>
+    <button class="action-btn btn-rest" onclick="doAction('rest_full')"><span class="btn-icon">💤</span><span class="btn-label">Dormir</span><span class="btn-cost">HP max</span></button>
+    <button class="action-btn btn-map" onclick="openPanel('map')"><span class="btn-icon">🗺️</span><span class="btn-label">Carte</span></button>
+  `;
+}
+
+function enterChest() {
+  G.phase = 'chest';
+  document.getElementById('room-title').textContent = '📦 Coffre au Trésor !';
+  document.getElementById('enemy-sprite').textContent = '📦';
+  document.getElementById('room-desc').textContent = 'Tu trouves un coffre abandonné !';
+
+  const gold = rand(10, 30 + G.floor * 10);
+  const hasItem = Math.random() < 0.6;
+  G.gold += gold;
+  setLog(`📦 Coffre ouvert ! +${gold} 💰`, 'info');
+
+  if (hasItem) {
+    const item = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+    addToInventory(item);
+    setLog(`🎁 Tu trouves : ${item.icon} ${item.name} !`, 'good');
+  }
+  updateHUD();
+
+  const grid = document.getElementById('actions-grid');
+  grid.className = 'actions-grid explore';
+  grid.innerHTML = `
+    <button class="action-btn btn-explore" onclick="doAction('next')"><span class="btn-icon">▶️</span><span class="btn-label">Continuer</span></button>
+    <button class="action-btn btn-map" onclick="openPanel('map')"><span class="btn-icon">🗺️</span><span class="btn-label">Carte</span></button>
+    <button class="action-btn btn-item" onclick="openPanel('inv')"><span class="btn-icon">🎒</span><span class="btn-label">Inventaire</span></button>
+  `;
+}
+
+function enterExit() {
+  G.phase = 'exit';
+  document.getElementById('room-title').textContent = '🚪 Sortie de l\'Étage';
+  document.getElementById('enemy-sprite').textContent = '🌟';
+  document.getElementById('room-desc').textContent = `Tu as terminé l'étage ${G.floor} ! Le donjon s'enfonce encore plus profondément...`;
+  setLog(`🌟 Étage ${G.floor} terminé ! L'aventure continue...`, 'info');
+
+  const grid = document.getElementById('actions-grid');
+  grid.className = 'actions-grid explore';
+  grid.innerHTML = `
+    <button class="action-btn btn-explore" onclick="doAction('next_floor')"><span class="btn-icon">⬇️</span><span class="btn-label">Étage ${G.floor + 1}</span></button>
+    <button class="action-btn btn-rest" onclick="doAction('rest_full')"><span class="btn-icon">💤</span><span class="btn-label">Se reposer</span></button>
+    <button class="action-btn btn-item" onclick="openPanel('inv')"><span class="btn-icon">🎒</span><span class="btn-label">Inventaire</span></button>
+  `;
+}
+
+function enterExplore() {
+  G.phase = 'explore';
+  document.getElementById('room-title').textContent = '🏰 Couloir';
+  document.getElementById('enemy-sprite').textContent = '';
+  document.getElementById('room-desc').textContent = 'Tu avances dans le donjon obscur...';
+  setLog('🚶 Tu explores le couloir.', 'info');
+  showExploreActions();
+}
+
+function showExploreActions() {
+  const grid = document.getElementById('actions-grid');
+  grid.className = 'actions-grid explore';
+  grid.innerHTML = `
+    <button class="action-btn btn-explore" onclick="doAction('next')"><span class="btn-icon">🚪</span><span class="btn-label">Explorer</span></button>
+    <button class="action-btn btn-map" onclick="openPanel('map')"><span class="btn-icon">🗺️</span><span class="btn-label">Carte</span></button>
+    <button class="action-btn btn-rest" onclick="doAction('use_hp')"><span class="btn-icon">🧪</span><span class="btn-label">Potion</span></button>
+  `;
+}
+
+function showCombatActions() {
+  const canMagic = G.mp >= 10;
+  const grid = document.getElementById('actions-grid');
+  grid.className = 'actions-grid combat';
+  grid.innerHTML = `
+    <button class="action-btn btn-attack" onclick="doAction('attack')"><span class="btn-icon">⚔️</span><span class="btn-label">Attaque</span></button>
+    <button class="action-btn btn-magic ${canMagic ? '' : 'btn-disabled'}" onclick="${canMagic ? "doAction('magic')" : ''}"><span class="btn-icon">✨</span><span class="btn-label">Magie</span><span class="btn-cost">10 MP</span></button>
+    <button class="action-btn btn-defend" onclick="doAction('defend')"><span class="btn-icon">🛡️</span><span class="btn-label">Défense</span></button>
+    <button class="action-btn btn-item" onclick="doAction('use_hp')"><span class="btn-icon">🧪</span><span class="btn-label">Potion</span></button>
+  `;
+}
+
+// ════════════════════════════════════════
+//  ACTIONS
+// ════════════════════════════════════════
+function doAction(action) {
+  switch(action) {
+    case 'explore':
+    case 'next': nextRoom(); break;
+    case 'next_floor': nextFloor(); break;
+    case 'attack': combatAction('attack'); break;
+    case 'magic':  combatAction('magic'); break;
+    case 'defend': combatAction('defend'); break;
+    case 'use_hp': usePotion('hp_potion'); break;
+    case 'rest_full':
+      G.hp = G.maxHp; G.mp = G.maxMp; updateHUD();
+      setLog('💤 Repos complet ! HP et MP restaurés.', 'good');
+      break;
+    case 'victory': showVictory(); break;
+    case 'flee': tryFlee(); break;
+  }
+}
+
+function nextRoom() {
+  if (G.room >= G.map.length - 1) return;
+  G.room++;
+  G.roomsVisited++;
+  updateHUD();
+  loadRoom();
+}
+
+function nextFloor() {
+  G.floor++;
+  G.room = 0;
+  G.map = generateMap(G.floor);
+  G.map[0].visited = true;
+  G.hp = Math.min(G.maxHp, G.hp + Math.floor(G.maxHp * 0.3));
+  updateHUD();
+  setLog(`⬇️ Bienvenue à l'étage ${G.floor} !`, 'info');
+  loadRoom();
+}
+
+// ── COMBAT ──
+function combatAction(type) {
+  if (G.phase !== 'combat') return;
+  const e = G.currentEnemy;
+
+  // Player turn
+  let dmg = 0;
+  let msg = '';
+
+  if (type === 'attack') {
+    dmg = Math.max(1, G.atk + G.bonusAtk - Math.floor(e.def / 2) + rand(-3, 3));
+    const isCrit = G.class === 'rogue' && Math.random() < 0.3;
+    if (isCrit) { dmg = Math.floor(dmg * 1.8); msg = '💥 CRITIQUE ! '; }
+    spawnDmg(dmg, 'enemy', 'var(--red)');
+    animHero('attack');
+    animEnemy('hurt');
+    msg += `-${dmg} HP à ${e.name}`;
+    setLog(`⚔️ ${msg}`, 'good');
+
+  } else if (type === 'magic') {
+    if (G.mp < 10) { setLog('❌ Pas assez de MP !', 'bad'); return; }
+    G.mp -= 10;
+    dmg = Math.max(1, (G.mag + G.bonusMag) * 2 - Math.floor(e.def * 0.3) + rand(-4, 4));
+    spawnDmg(dmg, 'enemy', 'var(--purple)');
+    animHero('attack');
+    animEnemy('hurt');
+    setLog(`✨ Sort ! -${dmg} HP à ${e.name}`, 'magic');
+    updateHUD();
+
+  } else if (type === 'defend') {
+    G.defending = true;
+    document.getElementById('shield-overlay').className = 'shield-overlay active';
+    setLog('🛡️ Tu te prépares à défendre !', 'info');
+    enemyTurn();
+    return;
+  }
+
+  G.currentEnemyHp -= dmg;
+  const pct = Math.max(0, (G.currentEnemyHp / e.maxHp) * 100);
+  document.getElementById('enemy-hpfill').style.width = pct + '%';
+
+  if (G.currentEnemyHp <= 0) {
+    enemyDie();
+    return;
+  }
+
+  setTimeout(() => enemyTurn(), 600);
+}
+
+function enemyTurn() {
+  const e = G.currentEnemy;
+  let dmg = Math.max(1, e.atk - (G.def + G.bonusDef) + rand(-3, 3));
+  if (G.defending) { dmg = Math.max(1, Math.floor(dmg * 0.35)); }
+  G.defending = false;
+
+  G.hp -= dmg;
+  G.hp = Math.max(0, G.hp);
+  spawnDmg(dmg, 'hero', 'var(--orange)');
+  animHero('hurt');
+  setLog(`👹 ${e.name} attaque ! -${dmg} HP`, 'bad');
+  updateHUD();
+
+  if (G.hp <= 0) {
+    setTimeout(() => gameOver(), 600);
+    return;
+  }
+  showCombatActions();
+}
+
+function tryFlee() {
+  if (Math.random() < 0.5) {
+    setLog('🏃 Tu t\'enfuis !', 'info');
+    G.phase = 'explore';
+    G.room = Math.max(0, G.room - 1);
+    updateHUD();
+    showExploreActions();
+  } else {
+    setLog('❌ Impossible de fuir !', 'bad');
+    enemyTurn();
+  }
+}
+
+function enemyDie() {
+  const e = G.currentEnemy;
+  animEnemy('dead');
+  const goldGain = rand(e.gold[0], e.gold[1]);
+  G.gold += goldGain;
+  G.kills++;
+  gainXP(e.xp);
+  setLog(`💀 ${e.name} vaincu ! +${e.xp} XP, +${goldGain} 💰`, 'good');
+  updateHUD();
+  G.phase = 'explore';
+
+  setTimeout(() => {
+    document.getElementById('enemy-hpbar').style.display = 'none';
+    const grid = document.getElementById('actions-grid');
+    grid.className = 'actions-grid explore';
+    grid.innerHTML = `
+      <button class="action-btn btn-explore" onclick="doAction('next')"><span class="btn-icon">▶️</span><span class="btn-label">Avancer</span></button>
+      <button class="action-btn btn-item" onclick="openPanel('inv')"><span class="btn-icon">🎒</span><span class="btn-label">Inventaire</span></button>
+      <button class="action-btn btn-map" onclick="openPanel('map')"><span class="btn-icon">🗺️</span><span class="btn-label">Carte</span></button>
+    `;
+
+    // Check if boss was killed on last room -> offer exit
+    const room = G.map[G.room];
+    if (room.type === 'boss') {
+      // Unlock exit
+      const exitIdx = G.map.findLastIndex(r => r.type === 'exit');
+      if (exitIdx > -1) G.map[exitIdx].visited = false;
+    }
+  }, 700);
+}
+
+function gainXP(amount) {
+  G.xp += amount;
+  if (G.xp >= G.xpNext) {
+    G.xp -= G.xpNext;
+    G.level++;
+    G.xpNext = Math.floor(G.xpNext * 1.5);
+    G.maxHp += 15; G.hp = Math.min(G.maxHp, G.hp + 15);
+    G.maxMp += 5;  G.mp = Math.min(G.maxMp, G.mp + 5);
+    G.atk += 2; G.def += 1; G.mag += 2;
+    showLevelUp();
+    setLog(`⬆️ NIVEAU ${G.level} ! Statistiques augmentées !`, 'info');
+  }
+}
+
+// ── MERCHANT ──
+function buyItem(item) {
+  if (G.gold < item.cost) { showToast('Pas assez d\'or ! 💰'); return; }
+  G.gold -= item.cost;
+  addToInventory(item);
+  setLog(`🛍️ Acheté : ${item.icon} ${item.name} !`, 'good');
+  updateHUD();
+  enterMerchant(); // refresh
+}
+
+function addToInventory(item) {
+  const existing = G.inventory.find(i => i.id === item.id);
+  if (existing && item.type === 'consumable') {
+    existing.qty = (existing.qty || 1) + 1;
+  } else {
+    G.inventory.push({ ...item, qty: item.type === 'consumable' ? 1 : 1 });
+  }
+}
+
+function usePotion(id) {
+  const idx = G.inventory.findIndex(i => i.id === id);
+  if (idx === -1) { showToast('Aucune potion disponible !'); return; }
+  const item = G.inventory[idx];
+  if (item.effect === 'hp') {
+    const heal = Math.min(item.val, G.maxHp - G.hp);
+    G.hp += heal;
+    setLog(`🧪 Potion ! +${heal} HP`, 'good');
+  } else if (item.effect === 'mp') {
+    const mpr = Math.min(item.val, G.maxMp - G.mp);
+    G.mp += mpr;
+    setLog(`💧 Potion ! +${mpr} MP`, 'good');
+  }
+  item.qty = (item.qty || 1) - 1;
+  if (item.qty <= 0) G.inventory.splice(idx, 1);
+  updateHUD();
+  if (G.phase === 'combat') showCombatActions();
+}
+
+function equipItem(item) {
+  const slot = item.type === 'weapon' ? 'weapon' : item.type === 'armor' ? 'armor' : 'accessory';
+  const old = G.equipped[slot];
+  if (old) {
+    G.bonusAtk -= old.effect === 'atk' ? old.val : 0;
+    G.bonusDef -= old.effect === 'def' ? old.val : 0;
+    G.bonusMag -= old.effect === 'mag' ? old.val : 0;
+  }
+  G.equipped[slot] = item;
+  if (item.effect === 'atk') G.bonusAtk += item.val;
+  if (item.effect === 'def') G.bonusDef += item.val;
+  if (item.effect === 'mag') G.bonusMag += item.val;
+  const idx = G.inventory.findIndex(i => i.id === item.id);
+  if (idx > -1) G.inventory.splice(idx, 1);
+  setLog(`⚙️ ${item.icon} ${item.name} équipé !`, 'good');
+  renderInventory();
+}
+
+// ── GAME OVER / VICTORY ──
+function gameOver() {
+  document.getElementById('go-sub').textContent = `Tu as survécu ${G.roomsVisited} salles, tué ${G.kills} ennemis, et atteint le niveau ${G.level}.`;
+  showScreen('gameover');
+}
+
+function showVictory() {
+  document.getElementById('vic-sub').textContent = `Niv.${G.level} · ${G.kills} ennemis · ${G.gold} 💰 récoltés. Légendaire !`;
+  showScreen('victory');
+}
+
+// ════════════════════════════════════════
+//  INVENTORY PANEL
+// ════════════════════════════════════════
+function renderInventory() {
+  const grid = document.getElementById('inv-grid');
+  grid.innerHTML = '';
+  const MAX_SLOTS = 16;
+  for (let i = 0; i < MAX_SLOTS; i++) {
+    const item = G.inventory[i];
+    const slot = document.createElement('div');
+    if (item) {
+      slot.className = 'inv-slot';
+      slot.innerHTML = `${item.icon}${item.qty > 1 ? `<div class="inv-slot-qty">${item.qty}</div>` : ''}<div class="inv-slot-name">${item.name.substring(0,6)}</div>`;
+      slot.onclick = () => {
+        if (item.type === 'consumable') usePotion(item.id);
+        else equipItem(item);
+        renderInventory();
+      };
+    } else {
+      slot.className = 'inv-slot empty';
+      slot.innerHTML = '·';
+    }
+    grid.appendChild(slot);
+  }
+
+  // Equipment
+  const eGrid = document.getElementById('equip-grid');
+  eGrid.innerHTML = '';
+  ['weapon','armor','accessory'].forEach(slot => {
+    const eq = G.equipped[slot];
+    const labels = { weapon:'Arme', armor:'Armure', accessory:'Accessoire' };
+    const div = document.createElement('div');
+    div.className = `equip-slot ${eq ? 'has-item' : ''}`;
+    div.innerHTML = `<div class="equip-slot-label">${labels[slot]}</div><div class="equip-slot-item">${eq ? eq.icon : '—'}</div><div class="equip-slot-name">${eq ? eq.name : 'Vide'}</div>`;
+    eGrid.appendChild(div);
+  });
+
+  // Stats
+  document.getElementById('stats-panel').innerHTML = `
+    <div class="stat-row2"><span class="slabel">❤️ HP Max</span><span class="sval">${G.maxHp}</span></div>
+    <div class="stat-row2"><span class="slabel">💧 MP Max</span><span class="sval">${G.maxMp}</span></div>
+    <div class="stat-row2"><span class="slabel">⚔️ Attaque</span><span class="sval">${G.atk + G.bonusAtk}</span></div>
+    <div class="stat-row2"><span class="slabel">🛡️ Défense</span><span class="sval">${G.def + G.bonusDef}</span></div>
+    <div class="stat-row2"><span class="slabel">✨ Magie</span><span class="sval">${G.mag + G.bonusMag}</span></div>
+    <div class="stat-row2"><span class="slabel">⭐ Niveau</span><span class="sval">${G.level}</span></div>
+    <div class="stat-row2"><span class="slabel">💰 Or</span><span class="sval">${G.gold}</span></div>
+    <div class="stat-row2"><span class="slabel">💀 Ennemis tués</span><span class="sval">${G.kills}</span></div>
+  `;
+}
+
+function renderMap() {
+  document.getElementById('map-floor-title').textContent = `Étage ${G.floor} — Salle ${G.room + 1} / ${G.map.length}`;
+  const grid = document.getElementById('map-grid');
+  grid.style.gridTemplateColumns = `repeat(${Math.min(G.map.length, 5)}, 44px)`;
+  grid.innerHTML = '';
+  G.map.forEach((room, i) => {
+    const cell = document.createElement('div');
+    const isCurrent = i === G.room;
+    const bg = {
+      enemy:'rgba(255,71,87,0.2)', boss:'rgba(255,170,0,0.3)',
+      merchant:'rgba(168,85,247,0.2)', rest:'rgba(46,213,115,0.2)',
+      chest:'rgba(255,215,0,0.2)', exit:'rgba(30,144,255,0.2)', start:'rgba(255,255,255,0.1)'
+    }[room.type] || 'rgba(255,255,255,0.05)';
+
+    if (isCurrent) {
+      cell.className = 'map-cell current visited';
+      cell.style.background = bg;
+      cell.textContent = '🟡';
+    } else if (room.visited) {
+      cell.className = 'map-cell visited';
+      cell.style.background = bg;
+      cell.textContent = room.icon;
+    } else {
+      cell.className = 'map-cell unknown';
+      cell.textContent = '?';
+    }
+    grid.appendChild(cell);
+  });
+}
+
+// ════════════════════════════════════════
+//  PANELS
+// ════════════════════════════════════════
+function openPanel(type) {
+  closePanel();
+  if (type === 'inv') {
+    renderInventory();
+    document.getElementById('panel-inv').classList.add('open');
+  } else if (type === 'map') {
+    renderMap();
+    document.getElementById('panel-map').classList.add('open');
+  }
+}
+
+function closePanel() {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'));
+}
+
+function navTo(tab, el) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ════════════════════════════════════════
+//  ANIMATIONS
+// ════════════════════════════════════════
+function animHero(type) {
+  const el = document.getElementById('hero-sprite');
+  el.className = 'hero-sprite ' + type;
+  setTimeout(() => el.className = 'hero-sprite', 500);
+}
+
+function animEnemy(type) {
+  const el = document.getElementById('enemy-sprite');
+  el.className = 'enemy-sprite ' + type;
+  if (type !== 'dead') setTimeout(() => el.className = 'enemy-sprite', 500);
+}
+
+function spawnDmg(val, target, color) {
+  const scene = document.getElementById('room-visual');
+  const rect = scene.getBoundingClientRect();
+  const x = target === 'enemy' ? rect.width * 0.65 : rect.width * 0.2;
+  const y = rect.height * 0.3;
+  const el = document.createElement('div');
+  el.className = 'dmg-float';
+  el.textContent = '-' + val;
+  el.style.cssText = `left:${x}px;top:${y}px;color:${color};`;
+  scene.style.position = 'relative';
+  scene.appendChild(el);
+  setTimeout(() => el.remove(), 900);
+}
+
+// ════════════════════════════════════════
+//  LOG / TOAST / LEVELUP
+// ════════════════════════════════════════
+function setLog(msg, type = 'info') {
+  const el = document.getElementById('log-entry');
+  el.textContent = msg;
+  el.className = 'log-entry ' + type;
+  void el.offsetWidth; // reflow for animation
+  el.className = 'log-entry ' + type;
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function showLevelUp() {
+  const el = document.getElementById('levelup-flash');
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1600);
+}
+
+// ════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════
+function rand(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+</script>
+</body>
+</html>
